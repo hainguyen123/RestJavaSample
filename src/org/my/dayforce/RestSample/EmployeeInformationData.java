@@ -9,10 +9,19 @@ public class EmployeeInformationData {
 	private String lastName;
 	private String xRefCode;
 	private String employeeNumber;
+	private String email;
 
 	public EmployeeInformationData() {
 	}
 
+	public String getEmail() {
+		return contactNumber;
+	}
+
+	public void setEmail(String contactNumber) {
+		this.contactNumber = contactNumber;
+	}
+	
 	public String getContactNumber() {
 		return contactNumber;
 	}

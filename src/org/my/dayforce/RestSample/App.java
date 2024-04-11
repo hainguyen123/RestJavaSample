@@ -107,7 +107,7 @@ public class App
 		FileWriter outputfile = new FileWriter(file); 
 		CSVWriter writer = new CSVWriter(outputfile); 
         // adding header to csv 
-        String[] header = { "contactNumber", "workContractDate", "maindenName","firstName", "initials","lastName","xRefCode","employeeNumber"}; 
+        String[] header = { "contactNumber", "workContractDate", "maindenName","firstName", "initials","lastName","xRefCode","employeeNumber", "email"}; 
         writer.writeNext(header);
 		
 		
@@ -115,17 +115,20 @@ public class App
 		HashMap<String, Object> queryString = new HashMap<String, Object>();		
 		queryString.put(EmployeeFilterConstants.FILTER_UPDATED_START_DATE, LocalDate.of(2017,Month.JANUARY,1).toString());
 		queryString.put(EmployeeFilterConstants.FILTER_UPDATED_END_DATE, LocalDate.of(2017, Month.JANUARY, 31).toString());
+		queryString.put(EmployeeFilterConstants.FILTER_TAFW_STATUS, "ACTIVE");
+		
 		Type type = new TypeToken<ApiResponse<ArrayList<Employee>>>(){}.getType();
 		ApiResponse<List<Employee>> employeesResponse = client.Get(type, GetUrl(DayforceApi.EMPLOYEES), queryString);
 		
 		List<Employee> empList = employeesResponse.getData();
 		//List<EmployeeInformationData> empDataLst = new ArrayList<EmployeeInformationData>();
 		if(null != empList) {
-			System.out.println("contactNumber \t workContractDate \t maindenName \t firstName \t initials \t lastName \t xRefCode \t employeeNumber");
+			System.out.println("contactNumber \t workContractDate \t maindenName \t firstName \t initials \t lastName \t xRefCode \t employeeNumber \t email");
 			for (Employee employee : empList) {
-				EmployeeInformationData empInfo = GetExpandedEmployee(employee.getXrefCode());
+				
+				EmployeeInformationData empInfo = getEmployeeInformationData(GetExpandedEmployee(employee.getXrefCode()));
 				if(null != empInfo) {
-					String[] EmpData = { empInfo.getContactNumber(), empInfo.getWorkContractDate(), empInfo.getMaindenName(),empInfo.getFirstName(),empInfo.getInitials(),empInfo.getLastName(),empInfo.getxRefCode(),empInfo.getEmployeeNumber() };
+					String[] EmpData = { empInfo.getContactNumber(), empInfo.getWorkContractDate(), empInfo.getMaindenName(),empInfo.getFirstName(),empInfo.getInitials(),empInfo.getLastName(),empInfo.getxRefCode(),empInfo.getEmployeeNumber(), empInfo.getEmail() };
 					writer.writeNext(EmpData);
 				}
 			}
@@ -139,14 +142,14 @@ public class App
 		//System.out.println();
 	}
 	
-	private static void GetOneEmployee(String empXRefCode) throws UnirestException{
+	private static Employee GetOneEmployee(String empXRefCode) throws UnirestException{
 		//System.out.println( "Getting One Employee" );
 		Type type = new TypeToken<ApiResponse<Employee>>(){}.getType();
 		//ApiResponse<Employee> employeeResponse = client.Get(type, GetUrl(DayforceApi.EMPLOYEES)+EmployeeXRefCode, null);
 		ApiResponse<Employee> employeeResponse = client.Get(type, GetUrl(DayforceApi.EMPLOYEES)+empXRefCode, null);
-		
 		//DisplayResponse(employeeResponse);
 		//showEmployeeInformation(employeeResponse.getData());
+		return employeeResponse.getData();
 	}
 	
 	//Hai add code
@@ -178,7 +181,16 @@ public class App
 			workContractDate = workContractLst.get(0).getStartDate();
 			}
 		}
-		
+		String emailStr = ""; 
+		if(null!=emp.getContacts()) {
+			if(null!=emp.getContacts().getItems() && emp.getContacts().getItems().size()>0) {
+				for(PersonContact p : emp.getContacts().getItems()) {
+					if(null!=p.getElectronicAddress()) {
+						emailStr = p.getElectronicAddress();
+					}
+				}
+			}
+		}
 		
 		String maindenName = emp.getMaidenName();
 		String firstName = emp.getFirstName();
@@ -196,8 +208,9 @@ public class App
 		empData.setLastName(lastName!=null?lastName:"");
 		empData.setxRefCode(xRefCode!=null?xRefCode:"");
 		empData.setEmployeeNumber(employeeNumber!=null?employeeNumber:"");
+		empData.setEmail(emailStr);
 		
-		System.out.println(contactNumber+"\t"+workContractDate+"\t"+maindenName+"\t"+firstName+"\t"+initials+"\t"+lastName+"\t"+xRefCode+"\t"+employeeNumber);
+		System.out.println(contactNumber+"\t"+workContractDate+"\t"+maindenName+"\t"+firstName+"\t"+initials+"\t"+lastName+"\t"+xRefCode+"\t"+employeeNumber+"\t"+emailStr);
 		
 		return empData;
 		
@@ -244,7 +257,7 @@ public class App
      * properties are added to the Employee, additional Expand values will need to be provided to retrieve those properties.
      */
 	//Hai add code
-    private static EmployeeInformationData GetExpandedEmployee(String empXRefCode) throws UnirestException{
+    private static Employee GetExpandedEmployee(String empXRefCode) throws UnirestException{
     	//System.out.println( "Getting One Fully Expanded Employee" );
     	HashMap<String, Object> queryString = new HashMap<String, Object>();
 		queryString.put(EmployeeFilterConstants.CONTEXT_DATE, LocalDate.now().toString());
@@ -294,7 +307,8 @@ public class App
 		Type type = new TypeToken<ApiResponse<Employee>>(){}.getType();
 		//ApiResponse<Employee> employeeResponse = client.Get(type, GetUrl(DayforceApi.EMPLOYEES)+EmployeeXRefCode, queryString);
 		ApiResponse<Employee> employeeResponse = client.Get(type, GetUrl(DayforceApi.EMPLOYEES)+empXRefCode, queryString);
-		return getEmployeeInformationData(employeeResponse.getData());
+		
+		return employeeResponse.getData();
 		//DisplayResponse(employeeResponse);
     }
 	
