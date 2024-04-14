@@ -107,7 +107,7 @@ public class App
 		FileWriter outputfile = new FileWriter(file); 
 		CSVWriter writer = new CSVWriter(outputfile); 
         // adding header to csv 
-        String[] header = { "contactNumber", "workContractDate", "maindenName","firstName", "initials","lastName","xRefCode","employeeNumber", "email"}; 
+        String[] header = { "contactNumber", "workContractDate", "maindenName","firstName", "initials","lastName","xRefCode","employeeNumber", "email","Status"}; 
         writer.writeNext(header);
 		
 		
@@ -115,7 +115,7 @@ public class App
 		HashMap<String, Object> queryString = new HashMap<String, Object>();		
 		queryString.put(EmployeeFilterConstants.FILTER_UPDATED_START_DATE, LocalDate.of(2017,Month.JANUARY,1).toString());
 		queryString.put(EmployeeFilterConstants.FILTER_UPDATED_END_DATE, LocalDate.of(2017, Month.JANUARY, 31).toString());
-		queryString.put(EmployeeFilterConstants.FILTER_TAFW_STATUS, "ACTIVE");
+		//queryString.put(EmployeeFilterConstants.FILTER_TAFW_STATUS, "ACTIVE");
 		
 		Type type = new TypeToken<ApiResponse<ArrayList<Employee>>>(){}.getType();
 		ApiResponse<List<Employee>> employeesResponse = client.Get(type, GetUrl(DayforceApi.EMPLOYEES), queryString);
@@ -123,12 +123,20 @@ public class App
 		List<Employee> empList = employeesResponse.getData();
 		//List<EmployeeInformationData> empDataLst = new ArrayList<EmployeeInformationData>();
 		if(null != empList) {
-			System.out.println("contactNumber \t workContractDate \t maindenName \t firstName \t initials \t lastName \t xRefCode \t employeeNumber \t email");
+			System.out.println("contactNumber \t workContractDate \t maindenName \t firstName \t initials \t lastName \t xRefCode \t employeeNumber \t email \t Status");
 			for (Employee employee : empList) {
 				
-				EmployeeInformationData empInfo = getEmployeeInformationData(GetExpandedEmployee(employee.getXrefCode()));
+				Employee testEmp = GetExpandedEmployee(employee.getXrefCode());
+				String statusStr = "";
+				if(null != testEmp.getEmploymentStatuses().getItems()) {
+					if(null != testEmp.getEmploymentStatuses().getItems().get(0)) {
+						statusStr = testEmp.getEmploymentStatuses().getItems().get(0).getEmploymentStatus().getXrefCode();
+						System.out.println(testEmp.getEmployeeNumber()+"===========>>>>>>>>"+statusStr);
+					}
+				}
+				EmployeeInformationData empInfo = getEmployeeInformationData(testEmp);
 				if(null != empInfo) {
-					String[] EmpData = { empInfo.getContactNumber(), empInfo.getWorkContractDate(), empInfo.getMaindenName(),empInfo.getFirstName(),empInfo.getInitials(),empInfo.getLastName(),empInfo.getxRefCode(),empInfo.getEmployeeNumber(), empInfo.getEmail() };
+					String[] EmpData = { empInfo.getContactNumber(), empInfo.getWorkContractDate(), empInfo.getMaindenName(),empInfo.getFirstName(),empInfo.getInitials(),empInfo.getLastName(),empInfo.getxRefCode(),empInfo.getEmployeeNumber(), empInfo.getEmail(),statusStr };
 					writer.writeNext(EmpData);
 				}
 			}
@@ -326,8 +334,8 @@ public class App
         HashMap<String, Object> queryString = new HashMap<String, Object>();
         
         LocalDate today = LocalDate.now();
-        queryString.put(EmployeeFilterConstants.FILTER_AVAILABILITY_START_DATE, today.toString());
-		queryString.put(EmployeeFilterConstants.FILTER_AVAILABILITY_END_DATE, today.plus(7, ChronoUnit.DAYS).toString());
+        queryString.put(EmployeeFilterConstants.FILTER_AVAILABILITY_START_DATE, LocalDate.of(2020,Month.JANUARY,1).toString());
+		queryString.put(EmployeeFilterConstants.FILTER_AVAILABILITY_END_DATE, LocalDate.of(2024,Month.JANUARY,1).toString());
 		
 		Type type = new TypeToken<ApiResponse<ArrayList<EmployeeAvailability> > >() {}.getType();
 		
